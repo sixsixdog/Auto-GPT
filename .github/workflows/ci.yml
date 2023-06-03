@@ -104,7 +104,14 @@ jobs:
             git push base $current_score_branch
             echo "Base branch: ${{ github.event.pull_request.head.ref }}"
             
-            gh api repos/${{ github.repository_owner }}/${{ github.repository }}/git/refs --jq ".[] | select(.ref | startswith(\"refs/heads/update-score-${{ github.event.pull_request.number }}\")) | .ref" | xargs -I {} gh api -X DELETE /repos/${{ github.repository_owner }}/${{ github.repository }}/git/{}
+            branches_to_delete=$(gh api repos/${{ github.repository_owner }}/${{ github.repository }}/git/refs --jq ".[] | select(.ref | startswith(\"refs/heads/update-score-${{ github.event.pull_request.number }}\")) | .ref")
+
+            if [ ! -z "$branches_to_delete" ]; then
+              echo "$branches_to_delete" | xargs -I {} gh api -X DELETE /repos/${{ github.repository_owner }}/${{ github.repository }}/git/{}
+            else
+              echo "No matching branches found to delete."
+            fi
+
             
             pr_url=$(gh pr create --title "Update Score In Pull Request Number ${{ github.event.pull_request.number }}" \
             --head "${{ github.repository_owner }}:$current_score_branch" \
